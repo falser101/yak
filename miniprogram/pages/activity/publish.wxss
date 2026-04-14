@@ -1,0 +1,96 @@
+page {
+  background-color: #f5f5f5;
+}
+
+.container {
+  padding: 30rpx;
+}
+
+.form-section {
+  background: white;
+  border-radius: 12rpx;
+  padding: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-item-inline {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.form-item.half {
+  flex: 1;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #333;
+  display: block;
+  margin-bottom: 15rpx;
+  font-weight: 500;
+}
+
+.input,
+.textarea,
+.picker {
+  width: 100%;
+  padding: 20rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+.textarea {
+  height: 200rpx;
+}
+
+.placeholder {
+  color: #999;
+}
+
+.uploader {
+  width: 100%;
+  height: 300rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8rpx;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.upload-placeholder .icon {
+  font-size: 80rpx;
+  color: #ccc;
+}
+
+.upload-placeholder .hint {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.submit-btn {
+  margin-top: 40rpx;
+  background: #07c160;
+  color: white;
+  font-size: 32rpx;
+  padding: 30rpx;
+  border-radius: 12rpx;
+}

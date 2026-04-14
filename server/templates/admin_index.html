@@ -1,0 +1,28 @@
+{{define "content"}}
+<div class="nav-tabs">
+  <a href="/admin/activities" class="active">活动管理</a>
+</div>
+
+<div class="card">
+  <h2 style="margin-bottom: 20px; font-size: 18px;">欢迎使用后台管理系统</h2>
+  <p style="color: #666; line-height: 1.6;">
+    您可以在此管理小程序上的活动内容，包括发布新活动、编辑现有活动、查看报名情况等。
+  </p>
+</div>
+
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 style="font-size: 18px;">快速入口</h2>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <a href="/admin/activities/new" class="btn btn-primary" style="text-align: center; padding: 20px;">
+      <div style="font-size: 24px; margin-bottom: 8px;">+</div>
+      <div>发布新活动</div>
+    </a>
+    <a href="/admin/activities" class="btn btn-secondary" style="text-align: center; padding: 20px;">
+      <div style="font-size: 24px; margin-bottom: 8px;">📋</div>
+      <div>管理活动</div>
+    </a>
+  </div>
+</div>
+{{end}}

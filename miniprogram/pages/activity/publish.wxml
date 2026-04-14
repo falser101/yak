@@ -1,0 +1,52 @@
+<view class="container">
+  <view class="form-section">
+    <view class="form-item">
+      <text class="label">活动标题 *</text>
+      <input class="input" placeholder="请输入活动标题" bindinput="onTitleInput" value="{{title}}" />
+    </view>
+
+    <view class="form-item">
+      <text class="label">活动封面 *</text>
+      <view class="uploader" bindtap="chooseCover">
+        <image wx:if="{{cover}}" class="cover-img" src="{{cover}}" mode="aspectFill" />
+        <view wx:else class="upload-placeholder">
+          <text class="icon">+</text>
+          <text class="hint">选择封面图片</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="label">活动时间 *</text>
+      <picker mode="multiSelector" range="{{dateTimeArray}}" bindchange="onDateChange" value="{{dateTimeValue}}">
+        <view class="picker">
+          <text wx:if="{{actionDate}}">{{actionDate}}</text>
+          <text wx:else class="placeholder">请选择活动时间</text>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-item">
+      <text class="label">活动地点 *</text>
+      <input class="input" placeholder="请输入集合地点" bindinput="onLocationInput" value="{{location}}" />
+    </view>
+
+    <view class="form-item-inline">
+      <view class="form-item half">
+        <text class="label">人数上限 *</text>
+        <input class="input" type="number" placeholder="最大人数" bindinput="onMaxInput" value="{{maxParticipants}}" />
+      </view>
+      <view class="form-item half">
+        <text class="label">活动费用 *</text>
+        <input class="input" type="digit" placeholder="¥" bindinput="onPriceInput" value="{{price}}" />
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="label">活动详情 *</text>
+      <textarea class="textarea" placeholder="请描述活动详情、行程安排、注意事项等" bindinput="onDescInput" value="{{description}}" maxlength="-1" />
+    </view>
+  </view>
+
+  <button class="submit-btn" bindtap="submitForm">发布活动</button>
+</view>

@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/activity/detail",
+    "pages/auth/auth",
+    "pages/challenge/challenge",
+    "pages/profile/profile",
+    "pages/my-activity/my-activity"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#07c160",
+    "navigationBarTitleText": "骑行活动",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#07c160",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "活动"
+      },
+      {
+        "pagePath": "pages/challenge/challenge",
+        "text": "挑战"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

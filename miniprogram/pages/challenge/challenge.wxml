@@ -1,0 +1,33 @@
+<view class="container">
+  <view class="challenge-header">
+    <text class="header-title">骑行挑战</text>
+    <text class="header-desc">完成挑战，获得勋章</text>
+  </view>
+
+  <view class="challenge-list">
+    <view class="challenge-card" wx:for="{{challenges}}" wx:key="id">
+      <view class="challenge-icon">{{item.icon}}</view>
+      <view class="challenge-info">
+        <text class="challenge-title">{{item.title}}</text>
+        <text class="challenge-desc">{{item.description}}</text>
+        <view class="progress-bar">
+          <view class="progress" style="width: {{item.progress}}%"></view>
+        </view>
+        <text class="progress-text">{{item.current}}/{{item.target}} {{item.unit}}</text>
+      </view>
+      <view class="challenge-badge {{item.completed ? 'completed' : ''}}">
+        <text>{{item.badge}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <text class="section-title">我的勋章墙</text>
+    <view class="badge-grid">
+      <view class="badge-item" wx:for="{{badges}}" wx:key="name">
+        <view class="badge-icon {{item.owned ? 'owned' : ''}}">{{item.icon}}</view>
+        <text class="badge-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+</view>

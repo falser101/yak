@@ -1,0 +1,44 @@
+<view class="container">
+  <!-- 顶部搜索框 -->
+  <view class="search-box">
+    <input class="search-input" placeholder="搜索活动" bindinput="onSearch" />
+  </view>
+
+  <!-- 活动列表 -->
+  <view class="activity-list">
+    <view class="activity-card" wx:for="{{activities}}" wx:key="id" bindtap="goDetail" data-id="{{item.id}}">
+      <image class="activity-cover" src="{{item.cover}}" mode="aspectFill" />
+      <view class="activity-info">
+        <text class="activity-title">{{item.title}}</text>
+        <text class="activity-date">{{item.date}}</text>
+        <view class="activity-meta">
+          <text class="activity-location">📍 {{item.location}}</text>
+          <text class="activity-participants">{{item.signupCount}}/{{item.maxParticipants}} 人已报名</text>
+        </view>
+        <!-- 最近报名用户头像 -->
+        <view class="recent-signups" wx:if="{{item.recentSignups && item.recentSignups.length > 0}}">
+          <image
+            wx:for="{{item.recentSignups}}"
+            wx:key="userId"
+            class="signup-avatar"
+            src="{{item.avatar}}"
+            mode="aspectFill"
+          />
+          <view class="more-signups" wx:if="{{item.signupCount > 4}}">
+            <text>+{{item.signupCount - 4}}</text>
+          </view>
+        </view>
+        <!-- 报名截止时间提示 -->
+        <view class="signup-deadline" wx:if="{{item.signupEndTime}}">
+          <text>⏰ 报名截止：{{item.signupEndTime}}</text>
+        </view>
+        <view class="activity-footer">
+          <text class="activity-price">¥{{item.price}}</text>
+          <button class="btn-signup" wx:if="{{item.status === 0}}">立即报名</button>
+          <text class="activity-status" wx:elif="{{item.status === 1}}">报名已满</text>
+          <text class="activity-status" wx:else>已结束</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

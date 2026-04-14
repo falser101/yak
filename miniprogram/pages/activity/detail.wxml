@@ -1,0 +1,140 @@
+<view class="container">
+  <!-- 活动头部 -->
+  <view class="activity-header">
+    <image class="header-cover" src="{{activity.cover}}" mode="aspectFill" />
+    <view class="header-info">
+      <text class="title">{{activity.title}}</text>
+      <view class="meta-row">
+        <text class="label">📅 时间</text>
+        <text class="value">{{activity.date}}</text>
+      </view>
+      <view class="meta-row">
+        <text class="label">📍 地点</text>
+        <text class="value">{{activity.location}}</text>
+      </view>
+      <view class="meta-row">
+        <text class="label">👥 人数</text>
+        <text class="value">{{activity.participants}}/{{activity.maxParticipants}}人</text>
+      </view>
+      <view class="meta-row">
+        <text class="label">💰 费用</text>
+        <text class="value">¥{{activity.price}}</text>
+      </view>
+      <!-- 报名截止时间 -->
+      <view class="meta-row deadline" wx:if="{{activity.signupEndTime}}">
+        <text class="label">⏰ 报名截止</text>
+        <text class="value">{{activity.signupEndTime}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 活动详情 -->
+  <view class="section">
+    <text class="section-title">活动详情</text>
+    <view class="content">{{activity.description}}</view>
+  </view>
+
+  <!-- 领队信息 -->
+  <view class="section">
+    <text class="section-title">领队信息</text>
+    <view class="leader-info">
+      <image class="leader-avatar" src="/images/avatar.png" />
+      <view class="leader-detail">
+        <text class="leader-name">骑行达人</text>
+        <text class="leader-desc">10 年骑行经验，组织过 100+ 场活动</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 报名用户列表 -->
+  <view class="section" wx:if="{{activity.allSignups && activity.allSignups.length > 0}}">
+    <text class="section-title">已报名 ({{activity.allSignups.length}})</text>
+    <view class="signups-list">
+      <view class="signup-item" wx:for="{{activity.allSignups}}" wx:key="userId">
+        <image class="signup-avatar" src="{{item.avatar}}" mode="aspectFill" />
+        <view class="signup-info">
+          <text class="signup-name">{{item.nickname || item.name}}</text>
+          <text class="signup-time">{{item.createdAt}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="contact-btn">
+      <text>联系客服</text>
+    </view>
+    <button class="signup-btn" bindtap="handleSignup" disabled="{{isSignedUp}}">
+      {{isSignedUp ? '已报名' : '立即报名'}}
+    </button>
+  </view>
+
+  <!-- 免责声明弹窗 -->
+  <view class="modal-mask" wx:if="{{showDisclaimer}}" bindtap="closeDisclaimer"></view>
+  <view class="modal-content disclaimer-modal" wx:if="{{showDisclaimer}}">
+    <view class="modal-header">
+      <text class="modal-title">报名须知</text>
+      <text class="modal-close" bindtap="closeDisclaimer">×</text>
+    </view>
+    <view class="disclaimer-body">
+      <scroll-view scroll-y class="disclaimer-scroll">
+        <view class="disclaimer-content">
+          <text class="disclaimer-title">一、活动性质声明</text>
+          <text class="disclaimer-text">1. 本活动为非营利性骑行活动，由骑友自愿发起并参与。</text>
+          <text class="disclaimer-text">2. 活动发起者仅为活动组织者，不对活动中任何意外事故承担法律责任。</text>
+          <text class="disclaimer-text">3. 参与者需年满18周岁，具有完全民事行为能力。</text>
+
+          <text class="disclaimer-title">二、健康状况确认</text>
+          <text class="disclaimer-text">1. 参与者确认自身身体健康，无心脏病、高血压、脑血管疾病、癫痫、眩晕症等不适宜剧烈运动的疾病。</text>
+          <text class="disclaimer-text">2. 参与者确认近期无发热、咳嗽、乏力等异常症状，身体状况适合参加骑行活动。</text>
+          <text class="disclaimer-text">3. 如有上述情况但仍坚持参加，视为个人行为，一切后果自负。</text>
+
+          <text class="disclaimer-title">三、骑行风险告知</text>
+          <text class="disclaimer-text">1. 骑行活动存在一定风险，包括但不限于：道路交通事故（碰撞、摔倒、被撞）、突发疾病（心脏骤停、中暑、低血糖）、第三方侵害、自然灾害、动物伤害等。</text>
+          <text class="disclaimer-text">2. 活动过程中如发生意外，参与者需自行承担相应后果。</text>
+
+          <text class="disclaimer-title">四、保险说明</text>
+          <text class="disclaimer-text">1. 活动组织者不为参与者购买任何保险。</text>
+          <text class="disclaimer-text">2. 建议参与者出发前自行购买意外伤害保险。</text>
+          <text class="disclaimer-text">3. 如因未购买保险导致无法获得赔偿，活动组织者不承担任何责任。</text>
+
+          <text class="disclaimer-title">五、紧急情况处理</text>
+          <text class="disclaimer-text">1. 活动中如遇紧急情况，参与者需第一时间报警并寻求救援。</text>
+          <text class="disclaimer-text">2. 在条件允许的情况下，参与者应尽力救助遇险的其他参与者。</text>
+
+          <text class="disclaimer-title">六、装备要求</text>
+          <text class="disclaimer-text">1. 参与者需自备符合安全标准的自行车，头盔、手套等防护装备。</text>
+          <text class="disclaimer-text">2. 活动组织者有权拒绝未佩戴头盔的参与者参加活动。</text>
+
+          <text class="disclaimer-title">七、行为规范</text>
+          <text class="disclaimer-text">1. 参与者须遵守交通规则，服从活动组织者的安排。</text>
+          <text class="disclaimer-text">2. 严禁酒后骑行、闯红灯、逆行等危险行为。</text>
+
+          <text class="disclaimer-title">八、责任免除</text>
+          <text class="disclaimer-text">1. 活动组织者对活动中因参与者自身原因造成的损害不承担责任。</text>
+          <text class="disclaimer-text">2. 因第三方原因造成的损害，由责任方承担责任，活动组织者不承担连带责任。</text>
+          <text class="disclaimer-text">3. 活动组织者不对因不可抗力导致活动取消或变更承担任何责任。</text>
+
+          <text class="disclaimer-title">九、个人信息授权</text>
+          <text class="disclaimer-text">活动组织者有权使用参与者在活动中的照片、视频等资料用于宣传，如有异议请书面告知。</text>
+
+          <text class="disclaimer-title">十、其他</text>
+          <text class="disclaimer-text">报名即视为已阅读并同意本免责声明全部内容，本声明解释权归活动组织者所有。</text>
+        </view>
+      </scroll-view>
+      <view class="disclaimer-agree">
+        <checkbox-group bindchange="onDisclaimerAgreeChange">
+          <label class="agree-label">
+            <checkbox value="agreed" checked="{{disclaimerAgreed}}" />
+            <text>我已阅读并同意上述声明</text>
+          </label>
+        </checkbox-group>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn-cancel" bindtap="closeDisclaimer">不同意</button>
+      <button class="btn-confirm" bindtap="confirmDisclaimer" disabled="{{!disclaimerAgreed}}">同意并报名</button>
+    </view>
+  </view>
+</view>
