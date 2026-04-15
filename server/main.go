@@ -52,11 +52,7 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
-	// 加载模板
-	templatePath, _ := filepath.Abs("templates")
-	r.LoadHTMLGlob(filepath.Join(templatePath, "*.html"))
-
-	// 跨域配置 (仅 API)
+	// 跨域配置
 	r.Use(func(c *gin.Context) {
 		if c.Request.Method == "OPTIONS" {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -68,40 +64,53 @@ func main() {
 		c.Next()
 	})
 
-	// 后台管理路由
-	admin := r.Group("/admin")
-	{
-		admin.GET("/login", handlers.LoginPage)
-		admin.POST("/login", handlers.LoginPost)
-		admin.GET("/logout", handlers.Logout)
+	// Vue SPA 静态文件路径
+	adminFrontendPath, _ := filepath.Abs("admin-frontend/dist")
 
-		// 需要登录验证的路由
-		admin.Use(handlers.AuthMiddleware())
-		{
-			admin.GET("/", handlers.AdminIndex)
-			admin.GET("/activities", handlers.AdminActivities(db))
-			admin.GET("/activities/new", handlers.AdminNewActivity)
-			admin.POST("/activities", handlers.AdminCreateActivity(db))
-			admin.GET("/activities/:id/edit", handlers.AdminEditActivity(db))
-			admin.POST("/activities/:id", handlers.AdminUpdateActivity(db))
-			admin.DELETE("/activities/:id", handlers.AdminDeleteActivity(db))
-			admin.GET("/signups/:id", handlers.AdminSignups(db))
-
-			// 管理后台 JSON API（与小程序 API 分离）
-			admin.GET("/api/activities", handlers.AdminListActivities(db))
-			admin.GET("/api/activities/:id", handlers.AdminGetActivity(db))
-			admin.POST("/api/activities", handlers.AdminCreateActivityJSON(db))
-			admin.PUT("/api/activities/:id", handlers.AdminUpdateActivityJSON(db))
-			admin.DELETE("/api/activities/:id", handlers.AdminDeleteActivityJSON(db))
-			admin.GET("/api/activities/:id/signups", handlers.AdminGetSignups(db))
-			admin.GET("/api/stats", handlers.AdminGetStats(db))
+	// 后台管理 Vue SPA 路由（必须放在 API 路由前面）
+	r.GET("/admin/*path", func(c *gin.Context) {
+		indexPath := filepath.Join(adminFrontendPath, "index.html")
+		if _, err := os.Stat(indexPath); err == nil {
+			c.File(indexPath)
+		} else {
+			c.String(http.StatusNotFound, "Vue 前端未构建，请先运行: cd admin-frontend && npm install && npm run build")
 		}
+	})
+
+	// 后台管理 JSON API
+	admin := r.Group("/api/admin")
+	{
+		admin.POST("/login", handlers.LoginAPI) // 登录接口不需要认证
 	}
 
-	// API 路由 (小程序使用)
+	// 需要认证的 API 路由
+	adminAuth := r.Group("/api/admin")
+	adminAuth.Use(handlers.AuthMiddleware())
+	{
+		adminAuth.GET("/stats", handlers.AdminGetStats(db))
+		adminAuth.GET("/activities", handlers.AdminListActivities(db))
+		adminAuth.GET("/activities/:id", handlers.AdminGetActivity(db))
+		adminAuth.POST("/activities", handlers.AdminCreateActivityJSON(db))
+		adminAuth.PUT("/activities/:id", handlers.AdminUpdateActivityJSON(db))
+		adminAuth.DELETE("/activities/:id", handlers.AdminDeleteActivityJSON(db))
+		adminAuth.GET("/activities/:id/signups", handlers.AdminGetSignups(db))
+
+		adminAuth.GET("/brands", handlers.AdminListBrands(db))
+		adminAuth.POST("/brands", handlers.AdminCreateBrand(db))
+		adminAuth.PUT("/brands/:id", handlers.AdminUpdateBrand(db))
+		adminAuth.DELETE("/brands/:id", handlers.AdminDeleteBrand(db))
+		adminAuth.GET("/brands/:id/models", handlers.AdminGetBrandModels(db))
+
+		adminAuth.POST("/models", handlers.AdminCreateModel(db))
+		adminAuth.PUT("/models/:id", handlers.AdminUpdateModel(db))
+		adminAuth.DELETE("/models/:id", handlers.AdminDeleteModel(db))
+
+		adminAuth.GET("/bikes", handlers.AdminListBikes(db))
+	}
+
+	// 小程序 API 路由
 	api := r.Group("/api")
 	{
-		// 认证相关
 		api.POST("/auth/login", handlers.Login(db))
 		api.GET("/auth/userinfo", handlers.GetCurrentUser(db), func(c *gin.Context) {
 			if user, exists := c.Get("user"); exists {
@@ -114,22 +123,28 @@ func main() {
 		api.POST("/auth/rz", handlers.SubmitRz(db))
 		api.POST("/auth/decrypt_phone", handlers.DecryptPhone(db))
 
-		// 活动相关
 		api.GET("/activities", handlers.GetActivities(db))
 		api.GET("/activities/:id", handlers.GetActivity(db))
 		api.POST("/activities", handlers.CreateActivity(db))
 		api.POST("/upload", handlers.UploadImage)
 
-		// 报名相关
 		api.POST("/activities/:id/signup", handlers.Signup(db))
 		api.GET("/activities/:id/signups", handlers.GetSignups(db))
 
-		// 我的报名
 		api.GET("/my/signups", handlers.GetMySignups(db))
+
+		api.GET("/brands", handlers.GetBrands(db))
+		api.GET("/brands/:id", handlers.GetBrand(db))
+		api.GET("/brands/:id/models", handlers.GetBrandModels(db))
+
+		api.GET("/bikes", handlers.GetMyBikes(db))
+		api.POST("/bikes", handlers.CreateBike(db))
+		api.PUT("/bikes/:id", handlers.UpdateBike(db))
+		api.DELETE("/bikes/:id", handlers.DeleteBike(db))
 	}
 
 	log.Println("服务器启动：http://localhost:8080")
-	log.Println("后台管理：http://localhost:8080/admin/login")
+	log.Println("后台管理：http://localhost:8080/admin")
 	log.Println("API 文档：http://localhost:8080/api/activities")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal("服务器启动失败:", err)

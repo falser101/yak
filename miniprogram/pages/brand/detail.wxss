@@ -1,0 +1,103 @@
+page {
+  background-color: #f5f5f5;
+}
+
+.container {
+  padding: 20rpx;
+}
+
+/* 品牌头部 */
+.brand-header {
+  background: white;
+  border-radius: 12rpx;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.brand-logo {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.brand-name {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 品牌描述 */
+.brand-desc {
+  background: white;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.desc-text {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.8;
+}
+
+/* 车型列表 */
+.section {
+  background: white;
+  border-radius: 12rpx;
+  padding: 30rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  display: block;
+  margin-bottom: 24rpx;
+}
+
+.bike-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.bike-card {
+  width: calc(50% - 10rpx);
+  background: #f9f9f9;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.bike-cover {
+  width: 100%;
+  height: 200rpx;
+  background: #eee;
+}
+
+.bike-info {
+  padding: 16rpx;
+}
+
+.bike-name {
+  font-size: 26rpx;
+  color: #333;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.bike-price {
+  font-size: 28rpx;
+  color: #ff6b35;
+  font-weight: 600;
+}

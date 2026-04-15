@@ -308,3 +308,270 @@ func AdminGetStats(db *sql.DB) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"data": stats})
 	}
 }
+
+// ============ 品牌管理 API ============
+
+// AdminListBrands 品牌列表
+func AdminListBrands(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rows, err := db.Query(`
+			SELECT b.id, b.name, b.logo, COALESCE(b.description, ''), COUNT(bm.id) as model_count
+			FROM brands b
+			LEFT JOIN brand_models bm ON b.id = bm.brand_id
+			GROUP BY b.id, b.name, b.logo, b.description
+			ORDER BY b.id
+		`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		type BrandItem struct {
+			ID          int    `json:"id"`
+			Name        string `json:"name"`
+			Logo        string `json:"logo"`
+			Description string `json:"description"`
+			ModelCount  int    `json:"modelCount"`
+		}
+
+		var brands []BrandItem
+		for rows.Next() {
+			var b BrandItem
+			if err := rows.Scan(&b.ID, &b.Name, &b.Logo, &b.Description, &b.ModelCount); err != nil {
+				continue
+			}
+			brands = append(brands, b)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": brands})
+	}
+}
+
+// AdminCreateBrand 创建品牌
+func AdminCreateBrand(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var input struct {
+			Name        string `json:"name"`
+			Logo        string `json:"logo"`
+			Description string `json:"description"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		var id int
+		err := db.QueryRow(`
+			INSERT INTO brands (name, logo, description) VALUES ($1, $2, $3) RETURNING id
+		`, input.Name, input.Logo, input.Description).Scan(&id)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"data": gin.H{"id": id}})
+	}
+}
+
+// AdminUpdateBrand 更新品牌
+func AdminUpdateBrand(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var input struct {
+			Name        string `json:"name"`
+			Logo        string `json:"logo"`
+			Description string `json:"description"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, err := db.Exec(`
+			UPDATE brands SET name=$1, logo=$2, description=$3 WHERE id=$4
+		`, input.Name, input.Logo, input.Description, id)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
+	}
+}
+
+// AdminDeleteBrand 删除品牌
+func AdminDeleteBrand(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		_, err := db.Exec(`DELETE FROM brands WHERE id = $1`, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+	}
+}
+
+// AdminGetBrandModels 获取品牌车型
+func AdminGetBrandModels(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		brandID := c.Param("id")
+
+		rows, err := db.Query(`
+			SELECT id, name, price, cover, bike_type FROM brand_models WHERE brand_id = $1 ORDER BY price DESC
+		`, brandID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		type ModelItem struct {
+			ID       int     `json:"id"`
+			Name     string  `json:"name"`
+			Price    float64 `json:"price"`
+			Cover    string  `json:"cover"`
+			BikeType string  `json:"bikeType"`
+		}
+
+		var models []ModelItem
+		for rows.Next() {
+			var m ModelItem
+			if err := rows.Scan(&m.ID, &m.Name, &m.Price, &m.Cover, &m.BikeType); err != nil {
+				continue
+			}
+			models = append(models, m)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": models})
+	}
+}
+
+// AdminCreateModel 创建车型
+func AdminCreateModel(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var input struct {
+			BrandID  int     `json:"brandId"`
+			Name     string  `json:"name"`
+			Price    float64 `json:"price"`
+			Cover    string  `json:"cover"`
+			BikeType string  `json:"bikeType"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		var id int
+		err := db.QueryRow(`
+			INSERT INTO brand_models (brand_id, name, price, cover, bike_type) VALUES ($1, $2, $3, $4, $5) RETURNING id
+		`, input.BrandID, input.Name, input.Price, input.Cover, input.BikeType).Scan(&id)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"data": gin.H{"id": id}})
+	}
+}
+
+// AdminUpdateModel 更新车型
+func AdminUpdateModel(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var input struct {
+			BrandID  int     `json:"brandId"`
+			Name     string  `json:"name"`
+			Price    float64 `json:"price"`
+			Cover    string  `json:"cover"`
+			BikeType string  `json:"bikeType"`
+		}
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, err := db.Exec(`
+			UPDATE brand_models SET brand_id=$1, name=$2, price=$3, cover=$4, bike_type=$5 WHERE id=$6
+		`, input.BrandID, input.Name, input.Price, input.Cover, input.BikeType, id)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
+	}
+}
+
+// AdminDeleteModel 删除车型
+func AdminDeleteModel(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		_, err := db.Exec(`DELETE FROM brand_models WHERE id = $1`, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+	}
+}
+
+// AdminListBikes 用户自行车列表
+func AdminListBikes(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		rows, err := db.Query(`
+			SELECT b.id, b.name, b.cover, b.bike_type, b.purchase_date, b.cost,
+			       COALESCE(u.nickname, '') as user_name,
+			       COALESCE(br.name, ''), COALESCE(bm.name, '')
+			FROM bikes b
+			LEFT JOIN users u ON b.user_id = u.id
+			LEFT JOIN brands br ON b.brand_id = br.id
+			LEFT JOIN brand_models bm ON b.model_id = bm.id
+			ORDER BY b.created_at DESC
+		`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		type BikeItem struct {
+			ID          int      `json:"id"`
+			Name        string   `json:"name"`
+			Cover       string   `json:"cover"`
+			BikeType    string   `json:"bikeType"`
+			PurchaseDate *string `json:"purchaseDate"`
+			Cost        float64  `json:"cost"`
+			UserName    string   `json:"userName"`
+			BrandName   string   `json:"brandName"`
+			ModelName   string   `json:"modelName"`
+		}
+
+		var bikes []BikeItem
+		for rows.Next() {
+			var b BikeItem
+			var purchaseDate sql.NullString
+			if err := rows.Scan(&b.ID, &b.Name, &b.Cover, &b.BikeType, &purchaseDate, &b.Cost,
+				&b.UserName, &b.BrandName, &b.ModelName); err != nil {
+				continue
+			}
+			if purchaseDate.Valid {
+				b.PurchaseDate = &purchaseDate.String
+			}
+			bikes = append(bikes, b)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": bikes})
+	}
+}

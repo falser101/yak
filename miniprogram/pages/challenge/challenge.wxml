@@ -1,32 +1,60 @@
 <view class="container">
-  <view class="challenge-header">
-    <text class="header-title">骑行挑战</text>
-    <text class="header-desc">完成挑战，获得勋章</text>
+  <!-- Tab 栏 -->
+  <view class="tab-bar">
+    <view
+      class="tab-item {{currentTab === item.key ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      bindtap="onTabChange"
+      data-key="{{item.key}}"
+    >
+      <text class="tab-label">{{item.label}}</text>
+      <view class="tab-indicator" wx:if="{{currentTab === item.key}}"></view>
+    </view>
   </view>
 
-  <view class="challenge-list">
-    <view class="challenge-card" wx:for="{{challenges}}" wx:key="id">
-      <view class="challenge-icon">{{item.icon}}</view>
-      <view class="challenge-info">
-        <text class="challenge-title">{{item.title}}</text>
-        <text class="challenge-desc">{{item.description}}</text>
-        <view class="progress-bar">
-          <view class="progress" style="width: {{item.progress}}%"></view>
+  <!-- 我的自行车 -->
+  <view class="tab-content" wx:if="{{currentTab === 'myBike'}}">
+    <view class="bike-list">
+      <view class="bike-card" wx:for="{{bikes}}" wx:key="id" bindtap="goBikeDetail" data-id="{{item.id}}">
+        <image class="bike-cover" src="{{item.cover}}" mode="aspectFill" />
+        <view class="bike-info">
+          <view class="bike-header">
+            <text class="bike-name">{{item.name}}</text>
+            <view class="bike-tag">{{item.bikeType || '未分类'}}</view>
+          </view>
+          <view class="bike-meta">
+            <text class="bike-date">购买日期：{{item.purchaseDate}}</text>
+            <text class="bike-cost">¥{{item.cost}}</text>
+          </view>
+          <view class="bike-action">
+            <text class="btn-detail">查看详情</text>
+          </view>
         </view>
-        <text class="progress-text">{{item.current}}/{{item.target}} {{item.unit}}</text>
       </view>
-      <view class="challenge-badge {{item.completed ? 'completed' : ''}}">
-        <text>{{item.badge}}</text>
+
+      <view class="empty-state" wx:if="{{bikes.length === 0}}">
+        <text class="empty-icon">🚴</text>
+        <text class="empty-text">暂无自行车</text>
+        <text class="empty-hint">点击右上角 + 添加你的第一辆车</text>
+      </view>
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="bottom-actions" wx:if="{{bikes.length > 0}}">
+      <view class="btn-all-brands" bindtap="onViewAllBrands">
+        <text>查看全部品牌</text>
+        <text class="arrow">›</text>
       </view>
     </view>
   </view>
 
-  <view class="section">
-    <text class="section-title">我的勋章墙</text>
-    <view class="badge-grid">
-      <view class="badge-item" wx:for="{{badges}}" wx:key="name">
-        <view class="badge-icon {{item.owned ? 'owned' : ''}}">{{item.icon}}</view>
-        <text class="badge-name">{{item.name}}</text>
+  <!-- 品牌 -->
+  <view class="tab-content" wx:if="{{currentTab === 'brands'}}">
+    <view class="brand-grid">
+      <view class="brand-item" wx:for="{{brands}}" wx:key="id" bindtap="goBrandDetail" data-id="{{item.id}}" data-name="{{item.name}}">
+        <view class="brand-logo">{{item.logo}}</view>
+        <text class="brand-name">{{item.name}}</text>
       </view>
     </view>
   </view>

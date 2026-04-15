@@ -2,21 +2,75 @@ const app = getApp()
 
 Page({
   data: {
-    activities: []
+    currentTab: 'activity',
+    tabs: [
+      { key: 'activity', label: '活动' },
+      { key: 'challenge', label: '挑战' },
+      { key: 'race', label: '赛事' },
+      { key: 'club', label: '俱乐部' }
+    ],
+    activities: [],
+    challenges: [
+      {
+        id: 1,
+        icon: '🚴',
+        title: '百公里挑战',
+        description: '累计骑行 100 公里',
+        progress: 65,
+        current: 65,
+        target: 100,
+        unit: '公里',
+        badge: '🏅',
+        completed: false
+      },
+      {
+        id: 2,
+        icon: '⛰️',
+        title: '爬坡王者',
+        description: '累计爬升 1000 米',
+        progress: 30,
+        current: 300,
+        target: 1000,
+        unit: '米',
+        badge: '🏔️',
+        completed: false
+      },
+      {
+        id: 3,
+        icon: '👥',
+        title: '社交达人',
+        description: '参加 10 场活动',
+        progress: 100,
+        current: 10,
+        target: 10,
+        unit: '场',
+        badge: '🌟',
+        completed: true
+      }
+    ]
   },
 
   onLoad() {
-    console.log('活动列表页加载')
     this.loadActivities()
   },
 
   onShow() {
-    // 每次显示页面时刷新活动列表
-    this.loadActivities()
+    if (this.data.currentTab === 'activity') {
+      this.loadActivities()
+    }
   },
 
   onPullDownRefresh() {
-    this.loadActivities()
+    if (this.data.currentTab === 'activity') {
+      this.loadActivities()
+    } else {
+      wx.stopPullDownRefresh()
+    }
+  },
+
+  onTabChange(e) {
+    const key = e.currentTarget.dataset.key
+    this.setData({ currentTab: key })
   },
 
   loadActivities() {
@@ -32,7 +86,6 @@ Page({
       success: (res) => {
         if (res.statusCode === 200 && res.data.data) {
           const activities = res.data.data.map(item => {
-            // 格式化报名截止时间
             if (item.signupEndTime) {
               const d = new Date(item.signupEndTime)
               item.signupEndTime = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
@@ -63,7 +116,6 @@ Page({
       return
     }
 
-    // 前端简单过滤
     const filtered = this.data.activities.filter(item =>
       item.title.toLowerCase().includes(keyword.toLowerCase())
     )

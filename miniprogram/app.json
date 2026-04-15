@@ -5,7 +5,8 @@
     "pages/auth/auth",
     "pages/challenge/challenge",
     "pages/profile/profile",
-    "pages/my-activity/my-activity"
+    "pages/my-activity/my-activity",
+    "pages/brand/detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",
@@ -23,7 +24,7 @@
       },
       {
         "pagePath": "pages/challenge/challenge",
-        "text": "挑战"
+        "text": "自行车"
       },
       {
         "pagePath": "pages/profile/profile",

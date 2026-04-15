@@ -1,0 +1,25 @@
+<view class="container">
+  <!-- 品牌介绍 -->
+  <view class="brand-header">
+    <view class="brand-logo">{{brand.logo}}</view>
+    <text class="brand-name">{{brandName}}</text>
+  </view>
+
+  <view class="brand-desc">
+    <text class="desc-text">{{brand.description}}</text>
+  </view>
+
+  <!-- 车型列表 -->
+  <view class="section">
+    <text class="section-title">车型列表</text>
+    <view class="bike-grid">
+      <view class="bike-card" wx:for="{{brand.bikes}}" wx:key="id">
+        <image class="bike-cover" src="{{item.cover}}" mode="aspectFill" />
+        <view class="bike-info">
+          <text class="bike-name">{{item.name}}</text>
+          <text class="bike-price">¥{{item.price}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -65,6 +65,28 @@ func LoginPost(c *gin.Context) {
 	}
 }
 
+// LoginAPI JSON 登录接口（供 Vue 前端使用）
+func LoginAPI(c *gin.Context) {
+	var input struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "请输入用户名和密码"})
+		return
+	}
+
+	if input.Username == "admin" && input.Password == "admin123" {
+		session, _ := store.Get(c.Request, "admin-session")
+		session.Values["authenticated"] = true
+		session.Values["username"] = input.Username
+		session.Save(c.Request, c.Writer)
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	} else {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "用户名或密码错误"})
+	}
+}
+
 // Logout 登出
 func Logout(c *gin.Context) {
 	session, _ := store.Get(c.Request, "admin-session")
