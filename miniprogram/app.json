@@ -5,8 +5,10 @@
     "pages/auth/auth",
     "pages/challenge/challenge",
     "pages/profile/profile",
+    "pages/profile/my-orders",
     "pages/my-activity/my-activity",
-    "pages/brand/detail"
+    "pages/brand/detail",
+    "pages/rental/detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",

@@ -2,41 +2,37 @@ const app = getApp()
 
 Page({
   data: {
-    currentTab: 'myBike',
-    tabs: [
-      { key: 'myBike', label: '我的自行车' },
-      { key: 'brands', label: '品牌' }
+    rentalBikes: [],
+    rentalTypes: [
+      { key: '', label: '全部' },
+      { key: '公路车', label: '公路车' },
+      { key: '山地车', label: '山地车' },
+      { key: '平把公路', label: '平把公路' },
+      { key: '电动车', label: '电动车' }
     ],
-    bikes: [],
-    brands: []
+    currentType: ''
   },
 
   onLoad() {
-    this.loadBikes()
-    this.loadBrands()
+    this.loadRentalBikes()
   },
 
-  onShow() {
-    if (this.data.currentTab === 'myBike') {
-      this.loadBikes()
-    }
+  onTypeChange(e) {
+    const type = e.currentTarget.dataset.type || ''
+    this.setData({ currentType: type })
+    this.loadRentalBikes()
   },
 
-  onTabChange(e) {
-    const key = e.currentTarget.dataset.key
-    this.setData({ currentTab: key })
-  },
-
-  onViewAllBrands() {
-    this.setData({ currentTab: 'brands' })
-  },
-
-  loadBikes() {
+  loadRentalBikes() {
     wx.showLoading({ title: '加载中...' })
     const token = wx.getStorageSync('token')
+    let url = `${app.globalData.apiBaseUrl}/rental/bikes`
+    if (this.data.currentType) {
+      url += `?bikeType=${encodeURIComponent(this.data.currentType)}`
+    }
 
     wx.request({
-      url: `${app.globalData.apiBaseUrl}/bikes`,
+      url,
       method: 'GET',
       header: {
         'Authorization': token ? 'Bearer ' + token : ''
@@ -44,9 +40,7 @@ Page({
       success: (res) => {
         wx.hideLoading()
         if (res.statusCode === 200 && res.data.data) {
-          this.setData({ bikes: res.data.data })
-        } else if (res.statusCode === 401) {
-          this.setData({ bikes: [] })
+          this.setData({ rentalBikes: res.data.data })
         }
       },
       fail: () => {
@@ -56,27 +50,10 @@ Page({
     })
   },
 
-  loadBrands() {
-    wx.request({
-      url: `${app.globalData.apiBaseUrl}/brands`,
-      method: 'GET',
-      success: (res) => {
-        if (res.statusCode === 200 && res.data.data) {
-          this.setData({ brands: res.data.data })
-        }
-      }
-    })
-  },
-
   goBikeDetail(e) {
     const id = e.currentTarget.dataset.id
-    wx.showToast({ title: '查看自行车详情', icon: 'none' })
-  },
-
-  goBrandDetail(e) {
-    const { id, name } = e.currentTarget.dataset
     wx.navigateTo({
-      url: `/pages/brand/detail?id=${id}&name=${name}`
+      url: `/pages/rental/detail?id=${id}`
     })
   }
 })

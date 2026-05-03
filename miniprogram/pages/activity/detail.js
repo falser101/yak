@@ -169,10 +169,11 @@ Page({
     const userInfo = wx.getStorageSync('userInfo')
     const token = wx.getStorageSync('token')
 
-    // 直接使用用户实名信息
+    // 直接使用用户实名信息（包含身份证号）
     const formData = {
       name: userInfo.rzRealName || userInfo.nickname || '微信用户',
       phone: userInfo.phone || '',
+      idNumber: userInfo.rzIdCard || '',
       emergencyContact: userInfo.rzEmergencyName || '',
       emergencyPhone: userInfo.rzEmergencyPhone || '',
       remark: ''

@@ -1,0 +1,47 @@
+<view class="container">
+  <view class="order-list">
+    <view class="order-card" wx:for="{{orders}}" wx:key="id">
+      <view class="order-card-header">
+        <text class="order-no">{{item.orderNo}}</text>
+        <text class="order-status status-{{item.statusClass}}">{{item.statusText}}</text>
+      </view>
+      <view class="order-card-body">
+        <view class="order-info-row">
+          <text class="order-info-label">预约车辆</text>
+          <text class="order-info-value">{{item.bikeName}}</text>
+        </view>
+        <view class="order-info-row">
+          <text class="order-info-label">预约套餐</text>
+          <text class="order-info-value">{{item.packageText}}</text>
+        </view>
+        <view class="order-info-row">
+          <text class="order-info-label">预约日期</text>
+          <text class="order-info-value">{{item.rentalDate}}</text>
+        </view>
+        <view class="order-info-row">
+          <text class="order-info-label">联系人</text>
+          <text class="order-info-value">{{item.contactName}}</text>
+        </view>
+        <view class="order-info-row">
+          <text class="order-info-label">下单时间</text>
+          <text class="order-info-value">{{item.createdAt}}</text>
+        </view>
+      </view>
+      <view class="order-card-footer">
+        <view class="order-total">
+          <text class="order-total-label">应付金额</text>
+          <text class="order-total-value">¥{{item.total}}</text>
+        </view>
+        <text class="order-action-btn" wx:if="{{item.status === 0}}">等待付款</text>
+        <text class="order-action-btn" wx:if="{{item.status === 1}}">联系客服</text>
+        <text class="order-action-btn" wx:if="{{item.status === 2}}">再次预约</text>
+      </view>
+    </view>
+
+    <view class="empty-state" wx:if="{{orders.length === 0 && !loading}}">
+      <text class="empty-icon">📋</text>
+      <text class="empty-text">暂无租赁订单</text>
+      <text class="empty-hint">去预约心仪的车型吧</text>
+    </view>
+  </view>
+</view>

@@ -3,198 +3,118 @@ page {
 }
 
 .container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  padding-bottom: 120rpx;
 }
 
-/* Tab 栏 */
-.tab-bar {
-  display: flex;
+/* 分类滚动 */
+.cat-scroll {
+  white-space: nowrap;
   background: #fff;
-  border-bottom: 1rpx solid #eee;
-  flex-shrink: 0;
+  border-bottom: 1rpx solid #f0f0f0;
 }
 
-.tab-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 88rpx;
-  position: relative;
+.cat-tabs {
+  display: inline-flex;
+  padding: 0 12rpx;
 }
 
-.tab-label {
+.cat-tab {
+  display: inline-block;
+  padding: 24rpx 28rpx;
   font-size: 28rpx;
-  color: #999;
-  transition: color 0.2s;
+  color: #666;
+  position: relative;
+  white-space: nowrap;
 }
 
-.tab-item.active .tab-label {
-  color: #ff6b35;
+.cat-tab.active {
+  color: #1a5f9e;
+  font-weight: 600;
 }
 
-.tab-indicator {
+.cat-tab.active::after {
+  content: '';
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 48rpx;
-  height: 4rpx;
-  background: #ff6b35;
-  border-radius: 2rpx;
+  width: 40rpx;
+  height: 6rpx;
+  background: #1a5f9e;
+  border-radius: 3rpx;
 }
 
-/* Tab 内容区 */
-.tab-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20rpx;
-  padding-bottom: 140rpx;
-}
-
-/* 自行车卡片 */
+/* 车辆列表 */
 .bike-list {
-  padding: 0;
+  padding: 24rpx 32rpx;
 }
 
-.bike-card {
-  background: white;
-  border-radius: 12rpx;
-  overflow: hidden;
-  margin-bottom: 20rpx;
+.bike-list-item {
   display: flex;
+  background: #fff;
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
 }
 
-.bike-cover {
-  width: 240rpx;
+.bike-thumb {
+  width: 200rpx;
   height: 200rpx;
-  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+.bike-emoji {
+  font-size: 80rpx;
 }
 
 .bike-info {
   flex: 1;
-  padding: 20rpx;
+  padding: 24rpx;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
-.bike-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12rpx;
-}
-
-.bike-name {
+.bike-title {
   font-size: 30rpx;
   font-weight: 600;
   color: #333;
-  flex: 1;
+  margin-bottom: 8rpx;
 }
 
-.bike-tag {
-  font-size: 22rpx;
-  color: #07c160;
-  background: #e8f8f0;
-  padding: 4rpx 12rpx;
-  border-radius: 4rpx;
-}
-
-.bike-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.bike-desc {
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.4;
   margin-bottom: 12rpx;
 }
 
-.bike-date {
-  font-size: 24rpx;
+.bike-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bike-price {
+  font-size: 32rpx;
+  color: #ff6b00;
+  font-weight: 700;
+}
+
+.bike-price .unit {
+  font-size: 22rpx;
+  font-weight: normal;
   color: #999;
 }
 
-.bike-cost {
-  font-size: 28rpx;
-  color: #ff6b35;
-  font-weight: 600;
-}
-
-.bike-action {
-  margin-top: auto;
-}
-
-.btn-detail {
-  font-size: 24rpx;
-  color: #07c160;
-  padding: 8rpx 20rpx;
-  border: 1rpx solid #07c160;
-  border-radius: 4rpx;
-  display: inline-block;
-}
-
-/* 底部按钮 */
-.bottom-actions {
-  padding: 20rpx 0;
-}
-
-.btn-all-brands {
-  background: white;
-  border-radius: 12rpx;
-  padding: 30rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-all-brands text {
-  font-size: 28rpx;
-  color: #333;
-}
-
-.btn-all-brands .arrow {
+.bike-arrow {
   font-size: 36rpx;
-  color: #999;
-  margin-left: 10rpx;
-}
-
-/* 品牌网格 */
-.brand-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-  padding: 10rpx 0;
-}
-
-.brand-item {
-  width: calc(50% - 10rpx);
-  background: white;
-  border-radius: 12rpx;
-  padding: 40rpx 20rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-.brand-logo {
-  width: 100rpx;
-  height: 100rpx;
-  border-radius: 50%;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40rpx;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16rpx;
-}
-
-.brand-name {
-  font-size: 26rpx;
-  color: #333;
+  color: #ccc;
 }
 
 /* 空状态 */
@@ -203,22 +123,16 @@ page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 120rpx 0;
+  padding: 240rpx 0;
 }
 
 .empty-icon {
-  font-size: 100rpx;
-  margin-bottom: 30rpx;
+  font-size: 200rpx;
+  margin-bottom: 60rpx;
 }
 
 .empty-text {
   font-size: 32rpx;
   color: #333;
   font-weight: 500;
-  margin-bottom: 12rpx;
-}
-
-.empty-hint {
-  font-size: 26rpx;
-  color: #999;
 }

@@ -1,0 +1,100 @@
+<view class="page-content" wx:if="{{bike}}">
+  <!-- 封面 -->
+  <view class="rental-detail-cover" style="background: linear-gradient(135deg, {{bike.bikeColor || '#1a5f9e'}}, {{bike.bikeColor || '#1a5f9e'}}99);">
+    <text class="cover-emoji">{{bike.tag === '热门' ? '🔥' : bike.tag === '推荐' ? '⭐' : bike.tag === '新品' ? '🆕' : '🚴'}}</text>
+    <view class="back-btn" bindtap="goBack">‹</view>
+    <view class="cover-tag {{bike.tag === '热门' ? 'tag-hot' : bike.tag === '推荐' ? 'tag-rec' : ''}}" wx:if="{{bike.tag}}">{{bike.tag}}</view>
+  </view>
+
+  <!-- 详情卡片 -->
+  <view class="rental-detail-card">
+    <view class="bike-detail-name">{{bike.name}}</view>
+    <view class="bike-detail-sub">{{bike.brandName}} · {{bike.bikeType}}</view>
+    <view class="bike-detail-price">
+      <text class="price-label">租金</text>
+      <text class="price-value">¥{{currentPrice}}<text class="price-unit">/{{priceUnit}}</text></text>
+    </view>
+
+    <!-- 套餐选择 -->
+    <view class="package-section">
+      <view class="package-label">选择套餐</view>
+      <scroll-view class="package-scroll" scroll-x="true">
+        <view class="package-list">
+          <view
+            class="package-item {{selectedPackage === 'day' ? 'active' : ''}}"
+            bindtap="onPackageChange"
+            data-package="day"
+          >
+            <view class="pkg-name">日租</view>
+            <view class="pkg-price">¥{{bike.priceDay}}<text class="pkg-unit">/天</text></view>
+          </view>
+          <view
+            class="package-item {{selectedPackage === 'hour' ? 'active' : ''}}"
+            bindtap="onPackageChange"
+            data-package="hour"
+          >
+            <view class="pkg-name">时租</view>
+            <view class="pkg-price">¥{{bike.priceHour}}<text class="pkg-unit">/时</text></view>
+          </view>
+          <view
+            class="package-item {{selectedPackage === 'team' ? 'active' : ''}}"
+            bindtap="onPackageChange"
+            data-package="team"
+          >
+            <view class="pkg-name">团队租</view>
+            <view class="pkg-price">¥{{bike.priceTeam}}<text class="pkg-unit">/人</text></view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 数量 -->
+    <view class="qty-section">
+      <text class="qty-label">数量</text>
+      <view class="qty-control">
+        <view class="qty-btn" bindtap="onQuantityChange" data-delta="-1">−</view>
+        <view class="qty-num">{{quantity}}</view>
+        <view class="qty-btn" bindtap="onQuantityChange" data-delta="1">+</view>
+      </view>
+    </view>
+
+    <!-- 租车日期 -->
+    <view class="date-section">
+      <text class="date-label">租车日期</text>
+      <picker mode="date" value="{{rentalDate}}" bindchange="onDateChange">
+        <view class="date-picker">{{rentalDate}}</view>
+      </picker>
+    </view>
+
+    <!-- 规格参数 -->
+    <view class="spec-section" wx:if="{{bike.specs && Object.keys(bike.specs).length > 0}}">
+      <view class="spec-title">车辆参数</view>
+      <view class="spec-grid">
+        <view class="spec-item" wx:for="{{specsList}}" wx:key="key">
+          <view class="spec-label">{{item.label}}</view>
+          <view class="spec-value">{{item.value}}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 租赁须知 -->
+    <view class="notes-section">
+      <view class="notes-title">📋 租赁须知</view>
+      <view class="notes-text">{{bike.notes || '1. 取车需缴纳押金¥' + bike.deposit + '，还车退还\n2. 最低起租：1天\n3. 提前还车可退剩余费用\n4. 损坏或遗失按原价赔偿\n5. 取车时间：08:00-20:00'}}</view>
+    </view>
+  </view>
+</view>
+
+<!-- 底部下单栏 -->
+<view class="order-bar" wx:if="{{bike}}">
+  <view class="order-total">
+    <view class="total-label">合计</view>
+    <view class="total-price">¥{{totalPrice}}</view>
+  </view>
+  <view class="order-btn" bindtap="handleBooking">立即预约</view>
+</view>
+
+<view class="empty-state" wx:if="{{!bike}}">
+  <text class="empty-icon">🚴</text>
+  <text class="empty-text">车辆不存在</text>
+</view>

@@ -1,61 +1,36 @@
 <view class="container">
-  <!-- Tab 栏 -->
-  <view class="tab-bar">
-    <view
-      class="tab-item {{currentTab === item.key ? 'active' : ''}}"
-      wx:for="{{tabs}}"
-      wx:key="key"
-      bindtap="onTabChange"
-      data-key="{{item.key}}"
-    >
-      <text class="tab-label">{{item.label}}</text>
-      <view class="tab-indicator" wx:if="{{currentTab === item.key}}"></view>
+  <!-- 车型分类 -->
+  <view class="cat-scroll">
+    <view class="cat-tabs">
+      <view
+        class="cat-tab {{currentType === item.key ? 'active' : ''}}"
+        wx:for="{{rentalTypes}}"
+        wx:key="key"
+        bindtap="onTypeChange"
+        data-type="{{item.key}}"
+      >{{item.label}}</view>
     </view>
   </view>
 
-  <!-- 我的自行车 -->
-  <view class="tab-content" wx:if="{{currentTab === 'myBike'}}">
-    <view class="bike-list">
-      <view class="bike-card" wx:for="{{bikes}}" wx:key="id" bindtap="goBikeDetail" data-id="{{item.id}}">
-        <image class="bike-cover" src="{{item.cover}}" mode="aspectFill" />
-        <view class="bike-info">
-          <view class="bike-header">
-            <text class="bike-name">{{item.name}}</text>
-            <view class="bike-tag">{{item.bikeType || '未分类'}}</view>
-          </view>
-          <view class="bike-meta">
-            <text class="bike-date">购买日期：{{item.purchaseDate}}</text>
-            <text class="bike-cost">¥{{item.cost}}</text>
-          </view>
-          <view class="bike-action">
-            <text class="btn-detail">查看详情</text>
-          </view>
+  <!-- 租车列表 -->
+  <view class="bike-list">
+    <view class="bike-list-item" wx:for="{{rentalBikes}}" wx:key="id" bindtap="goBikeDetail" data-id="{{item.id}}">
+      <view class="bike-thumb" style="background: linear-gradient(135deg, {{item.bikeColor || '#1a5f9e'}}22, {{item.bikeColor || '#1a5f9e'}}11);">
+        <text class="bike-emoji">{{item.tag === '热门' ? '🔥' : item.tag === '推荐' ? '⭐' : item.tag === '新品' ? '🆕' : '🚴'}}</text>
+      </view>
+      <view class="bike-info">
+        <view class="bike-title">{{item.name}}</view>
+        <view class="bike-desc">{{item.brandName}} · {{item.bikeType}}</view>
+        <view class="bike-bottom">
+          <view class="bike-price">¥{{item.priceDay}}<text class="unit">/天</text></view>
+          <text class="bike-arrow">›</text>
         </view>
       </view>
-
-      <view class="empty-state" wx:if="{{bikes.length === 0}}">
-        <text class="empty-icon">🚴</text>
-        <text class="empty-text">暂无自行车</text>
-        <text class="empty-hint">点击右上角 + 添加你的第一辆车</text>
-      </view>
     </view>
 
-    <!-- 底部按钮 -->
-    <view class="bottom-actions" wx:if="{{bikes.length > 0}}">
-      <view class="btn-all-brands" bindtap="onViewAllBrands">
-        <text>查看全部品牌</text>
-        <text class="arrow">›</text>
-      </view>
-    </view>
-  </view>
-
-  <!-- 品牌 -->
-  <view class="tab-content" wx:if="{{currentTab === 'brands'}}">
-    <view class="brand-grid">
-      <view class="brand-item" wx:for="{{brands}}" wx:key="id" bindtap="goBrandDetail" data-id="{{item.id}}" data-name="{{item.name}}">
-        <view class="brand-logo">{{item.logo}}</view>
-        <text class="brand-name">{{item.name}}</text>
-      </view>
+    <view class="empty-state" wx:if="{{rentalBikes.length === 0 && !loading}}">
+      <text class="empty-icon">🚴</text>
+      <text class="empty-text">暂无可租车辆</text>
     </view>
   </view>
 </view>
