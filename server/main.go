@@ -6,13 +6,19 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"yak-server/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
+	// 加载 .env 文件
+	envPath, _ := filepath.Abs(filepath.Join(".", ".env"))
+	godotenv.Load(envPath)
+
 	// 连接数据库
 	connStr := "host=localhost port=5432 user=yak password=yak123456 dbname=yak sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
@@ -28,25 +34,31 @@ func main() {
 	// 初始化 MinIO
 	minioEndpoint := os.Getenv("MINIO_ENDPOINT")
 	if minioEndpoint == "" {
-		minioEndpoint = "localhost:9000"
+		log.Fatal("MINIO_ENDPOINT 环境变量未设置")
+	}
+	// 解析 endpoint，支持 http:// 和 https:// 前缀
+	minioSecure := false
+	if minioEndpoint, ok := strings.CutPrefix(minioEndpoint, "https://"); ok {
+		minioSecure = true
+	} else if minioEndpoint, ok = strings.CutPrefix(minioEndpoint, "http://"); !ok {
+		// 无前缀，保持原样
 	}
 	minioAccessKey := os.Getenv("MINIO_ACCESS_KEY")
 	if minioAccessKey == "" {
-		minioAccessKey = "yak"
+		log.Fatal("MINIO_ACCESS_KEY 环境变量未设置")
 	}
 	minioSecretKey := os.Getenv("MINIO_SECRET_KEY")
 	if minioSecretKey == "" {
-		minioSecretKey = "yak123456"
+		log.Fatal("MINIO_SECRET_KEY 环境变量未设置")
 	}
 	minioBucket := os.Getenv("MINIO_BUCKET")
 	if minioBucket == "" {
-		minioBucket = "yak-uploads"
+		log.Fatal("MINIO_BUCKET 环境变量未设置")
 	}
-	if err := handlers.InitMinIO(minioEndpoint, minioAccessKey, minioSecretKey, minioBucket); err != nil {
-		log.Printf("警告: MinIO 初始化失败: %v，图片上传功能将不可用\n", err)
-	} else {
-		log.Println("MinIO 初始化成功")
+	if err := handlers.InitMinIO(minioEndpoint, minioAccessKey, minioSecretKey, minioBucket, minioSecure); err != nil {
+		log.Fatal("MinIO 初始化失败:", err)
 	}
+	log.Println("MinIO 初始化成功")
 
 	// 设置 Gin 模式
 	gin.SetMode(gin.DebugMode)
@@ -106,6 +118,21 @@ func main() {
 		adminAuth.DELETE("/models/:id", handlers.AdminDeleteModel(db))
 
 		adminAuth.GET("/bikes", handlers.AdminListBikes(db))
+
+		adminAuth.GET("/rental-bikes", handlers.AdminListRentalBikes(db))
+		adminAuth.POST("/rental-bikes", handlers.AdminCreateRentalBike(db))
+		adminAuth.PUT("/rental-bikes/:id", handlers.AdminUpdateRentalBike(db))
+		adminAuth.DELETE("/rental-bikes/:id", handlers.AdminDeleteRentalBike(db))
+
+		adminAuth.GET("/rental-orders", handlers.AdminListRentalOrders(db))
+		adminAuth.PUT("/rental-orders/:id/confirm", handlers.AdminConfirmPayment(db))
+
+		adminAuth.GET("/rental-stats", handlers.AdminRentalStats(db))
+
+		adminAuth.GET("/users", handlers.AdminListUsers(db))
+		adminAuth.GET("/users/:id", handlers.AdminGetUser(db))
+		adminAuth.PUT("/users/:id", handlers.AdminUpdateUser(db))
+		adminAuth.PUT("/users/:id/status", handlers.AdminDisableUser(db))
 	}
 
 	// 小程序 API 路由
@@ -141,6 +168,13 @@ func main() {
 		api.POST("/bikes", handlers.CreateBike(db))
 		api.PUT("/bikes/:id", handlers.UpdateBike(db))
 		api.DELETE("/bikes/:id", handlers.DeleteBike(db))
+
+		api.GET("/rental/bikes", handlers.GetRentalBikes(db))
+		api.GET("/rental/bikes/:id", handlers.GetRentalBike(db))
+		api.POST("/rental/orders", handlers.CreateRentalOrder(db))
+		api.GET("/rental/orders", handlers.GetMyRentalOrders(db))
+		api.DELETE("/rental/orders/:id", handlers.CancelRentalOrder(db))
+		api.POST("/rental/pay", handlers.PayAtStore(db))
 	}
 
 	log.Println("服务器启动：http://localhost:8080")

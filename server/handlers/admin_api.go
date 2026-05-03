@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,9 +12,13 @@ import (
 
 // AdminStats 统计数据
 type AdminStats struct {
-	TotalActivities int `json:"totalActivities"`
-	TotalSignups    int `json:"totalSignups"`
-	TotalUsers      int `json:"totalUsers"`
+	TotalActivities  int     `json:"totalActivities"`
+	ActiveActivities int     `json:"activeActivities"`
+	TotalSignups     int     `json:"totalSignups"`
+	PendingSignups   int     `json:"pendingSignups"`
+	TotalUsers       int     `json:"totalUsers"`
+	ActiveUsers      int     `json:"activeUsers"`
+	TotalRevenue     float64 `json:"totalRevenue"`
 }
 
 // AdminListActivities 获取活动列表（管理后台用）
@@ -21,6 +26,7 @@ func AdminListActivities(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+		category := c.DefaultQuery("category", "")
 
 		if page < 1 {
 			page = 1
@@ -31,15 +37,29 @@ func AdminListActivities(db *sql.DB) gin.HandlerFunc {
 
 		offset := (page - 1) * pageSize
 
+		// 构建查询条件
+		whereClause := ""
+		args := []interface{}{pageSize, offset}
+		if category != "" {
+			whereClause = " WHERE a.category = $3"
+			args = []interface{}{pageSize, offset, category}
+		}
+
 		// 获取总数
 		var total int
-		db.QueryRow(`SELECT COUNT(*) FROM activities`).Scan(&total)
+		countQuery := `SELECT COUNT(*) FROM activities a` + whereClause
+		if category != "" {
+			db.QueryRow(countQuery, category).Scan(&total)
+		} else {
+			db.QueryRow(countQuery).Scan(&total)
+		}
 
 		// 获取活动列表
-		rows, err := db.Query(`
+		query := `
 			SELECT
 				a.id, a.title, a.cover, a.date, a.location,
 				a.max_participants, a.price, a.description, a.status, a.created_at, a.signup_end_time,
+				COALESCE(a.category, 'activity'), COALESCE(a.rules, ''), COALESCE(a.route, ''), COALESCE(a.awards, ''),
 				COALESCE(u.id::text, '0')::int as created_by_id,
 				COALESCE(u.nickname, '') as created_by_name,
 				COALESCE(signup_count.cnt, 0) as signup_count
@@ -50,9 +70,11 @@ func AdminListActivities(db *sql.DB) gin.HandlerFunc {
 				FROM signups WHERE status = 1
 				GROUP BY activity_id
 			) signup_count ON a.id = signup_count.activity_id
+			` + whereClause + `
 			ORDER BY a.date DESC
 			LIMIT $1 OFFSET $2
-		`, pageSize, offset)
+		`
+		rows, err := db.Query(query, args...)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -75,6 +97,10 @@ func AdminListActivities(db *sql.DB) gin.HandlerFunc {
 			CreatedAt       time.Time  `json:"createdAt"`
 			CreatedByID     int        `json:"createdById"`
 			CreatedByName   string     `json:"createdByName"`
+			Category        string     `json:"category"`
+			Rules           string     `json:"rules"`
+			Route           string     `json:"route"`
+			Awards          string     `json:"awards"`
 		}
 
 		var activities []ActivityItem
@@ -83,6 +109,7 @@ func AdminListActivities(db *sql.DB) gin.HandlerFunc {
 			var signupEndTime sql.NullString
 			err := rows.Scan(&a.ID, &a.Title, &a.Cover, &a.Date, &a.Location,
 				&a.MaxParticipants, &a.Price, &a.Description, &a.Status, &a.CreatedAt, &signupEndTime,
+				&a.Category, &a.Rules, &a.Route, &a.Awards,
 				&a.CreatedByID, &a.CreatedByName, &a.SignupCount)
 			if err != nil {
 				continue
@@ -122,6 +149,10 @@ func AdminGetActivity(db *sql.DB) gin.HandlerFunc {
 			CreatedAt       time.Time  `json:"createdAt"`
 			CreatedByID     int        `json:"createdById"`
 			CreatedByName   string     `json:"createdByName"`
+			Category        string     `json:"category"`
+			Rules           string     `json:"rules"`
+			Route           string     `json:"route"`
+			Awards          string     `json:"awards"`
 		}
 
 		var a ActivityDetail
@@ -133,14 +164,16 @@ func AdminGetActivity(db *sql.DB) gin.HandlerFunc {
 				COALESCE(u.id::text, '0')::int, COALESCE(u.nickname, ''),
 				COALESCE((
 					SELECT COUNT(*) FROM signups WHERE activity_id = a.id AND status = 1
-				), 0)
+				), 0),
+				COALESCE(a.category, 'activity'), COALESCE(a.rules, ''), COALESCE(a.route, ''), COALESCE(a.awards, '')
 			FROM activities a
 			LEFT JOIN users u ON CASE WHEN a.created_by ~ '^[0-9]+$' THEN a.created_by::int ELSE 0 END = u.id
 			WHERE a.id = $1
 		`, id).Scan(
 			&a.ID, &a.Title, &a.Cover, &a.Date, &a.Location,
 			&a.MaxParticipants, &a.Price, &a.Description, &a.Status, &a.CreatedAt, &signupEndTime,
-			&a.CreatedByID, &a.CreatedByName, &a.SignupCount)
+			&a.CreatedByID, &a.CreatedByName, &a.SignupCount,
+			&a.Category, &a.Rules, &a.Route, &a.Awards)
 
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "活动不存在"})
@@ -171,6 +204,10 @@ func AdminCreateActivityJSON(db *sql.DB) gin.HandlerFunc {
 			Price           float64  `json:"price"`
 			Description     string   `json:"description"`
 			SignupEndTime   *string  `json:"signupEndTime,omitempty"`
+			Category        string   `json:"category"`
+			Rules           string   `json:"rules"`
+			Route           string   `json:"route"`
+			Awards          string   `json:"awards"`
 		}
 
 		if err := c.ShouldBindJSON(&input); err != nil {
@@ -178,13 +215,20 @@ func AdminCreateActivityJSON(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		// 默认分类
+		category := input.Category
+		if category == "" {
+			category = "activity"
+		}
+
 		var id int
 		err := db.QueryRow(`
-			INSERT INTO activities (title, cover, date, location, max_participants, price, description, signup_end_time, created_by)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			INSERT INTO activities (title, cover, date, location, max_participants, price, description, signup_end_time, created_by, category, rules, route, awards)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			RETURNING id
 		`, input.Title, input.Cover, input.Date, input.Location,
-			input.MaxParticipants, input.Price, input.Description, input.SignupEndTime, 1).Scan(&id)
+			input.MaxParticipants, input.Price, input.Description, input.SignupEndTime, 1,
+			category, input.Rules, input.Route, input.Awards).Scan(&id)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -210,6 +254,10 @@ func AdminUpdateActivityJSON(db *sql.DB) gin.HandlerFunc {
 			Description     string  `json:"description"`
 			Status          int     `json:"status"`
 			SignupEndTime   *string `json:"signupEndTime,omitempty"`
+			Category        string  `json:"category"`
+			Rules           string  `json:"rules"`
+			Route           string  `json:"route"`
+			Awards          string  `json:"awards"`
 		}
 
 		if err := c.ShouldBindJSON(&input); err != nil {
@@ -220,10 +268,12 @@ func AdminUpdateActivityJSON(db *sql.DB) gin.HandlerFunc {
 		_, err := db.Exec(`
 			UPDATE activities
 			SET title=$1, cover=$2, date=$3, location=$4, max_participants=$5,
-			    price=$6, description=$7, status=$8, signup_end_time=$9
-			WHERE id=$10
+			    price=$6, description=$7, status=$8, signup_end_time=$9,
+			    category=$10, rules=$11, route=$12, awards=$13
+			WHERE id=$14
 		`, input.Title, input.Cover, input.Date, input.Location,
-			input.MaxParticipants, input.Price, input.Description, input.Status, input.SignupEndTime, id)
+			input.MaxParticipants, input.Price, input.Description, input.Status, input.SignupEndTime,
+			input.Category, input.Rules, input.Route, input.Awards, id)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -255,6 +305,7 @@ type AdminSignupItem struct {
 	UserID           int    `json:"userId"`
 	Name             string `json:"name"`
 	Phone            string `json:"phone"`
+	IdNumber         string `json:"idNumber"`
 	EmergencyContact string `json:"emergencyContact"`
 	EmergencyPhone   string `json:"emergencyPhone"`
 	Remark           string `json:"remark"`
@@ -270,7 +321,7 @@ func AdminGetSignups(db *sql.DB) gin.HandlerFunc {
 		activityID := c.Param("id")
 
 		rows, err := db.Query(`
-			SELECT s.id, s.user_id, s.name, s.phone, s.emergency_contact, s.emergency_phone,
+			SELECT s.id, s.user_id, s.name, s.phone, COALESCE(s.id_number, ''), s.emergency_contact, s.emergency_phone,
 			       s.remark, s.status, s.created_at, COALESCE(u.nickname, ''), COALESCE(u.avatar, '')
 			FROM signups s
 			LEFT JOIN users u ON s.user_id = u.id
@@ -287,7 +338,7 @@ func AdminGetSignups(db *sql.DB) gin.HandlerFunc {
 		var signups []AdminSignupItem
 		for rows.Next() {
 			var s AdminSignupItem
-			rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Phone, &s.EmergencyContact, &s.EmergencyPhone,
+			rows.Scan(&s.ID, &s.UserID, &s.Name, &s.Phone, &s.IdNumber, &s.EmergencyContact, &s.EmergencyPhone,
 				&s.Remark, &s.Status, &s.CreatedAt, &s.Nickname, &s.Avatar)
 			signups = append(signups, s)
 		}
@@ -302,8 +353,12 @@ func AdminGetStats(db *sql.DB) gin.HandlerFunc {
 		var stats AdminStats
 
 		db.QueryRow(`SELECT COUNT(*) FROM activities`).Scan(&stats.TotalActivities)
+		db.QueryRow(`SELECT COUNT(*) FROM activities WHERE status = 1`).Scan(&stats.ActiveActivities)
 		db.QueryRow(`SELECT COUNT(*) FROM signups WHERE status = 1`).Scan(&stats.TotalSignups)
+		db.QueryRow(`SELECT COUNT(*) FROM signups WHERE status = 0`).Scan(&stats.PendingSignups)
 		db.QueryRow(`SELECT COUNT(*) FROM users`).Scan(&stats.TotalUsers)
+		db.QueryRow(`SELECT COUNT(*) FROM users WHERE COALESCE(status, 1) = 1`).Scan(&stats.ActiveUsers)
+		db.QueryRow(`SELECT COALESCE(SUM(amount), 0) FROM signups WHERE status = 1`).Scan(&stats.TotalRevenue)
 
 		c.JSON(http.StatusOK, gin.H{"data": stats})
 	}
@@ -573,5 +628,189 @@ func AdminListBikes(db *sql.DB) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"data": bikes})
+	}
+}
+
+// ============ 用户管理 API ============
+
+// AdminUserItem 用户项
+type AdminUserItem struct {
+	ID              int     `json:"id"`
+	Openid          string  `json:"openid"`
+	Nickname        string  `json:"nickname"`
+	Avatar          string  `json:"avatar"`
+	Phone           string  `json:"phone"`
+	MembershipLevel int     `json:"membershipLevel"`
+	TotalRides      int     `json:"totalRides"`
+	SignupCount     int     `json:"signupCount"`
+	Status          int     `json:"status"`
+	CreatedAt       string  `json:"createdAt"`
+	LastLoginTime   *string `json:"lastLoginTime,omitempty"`
+}
+
+// AdminListUsers 获取用户列表
+func AdminListUsers(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+		keyword := c.DefaultQuery("keyword", "")
+		membershipLevel := c.DefaultQuery("membershipLevel", "")
+
+		if page < 1 {
+			page = 1
+		}
+		if pageSize < 1 || pageSize > 100 {
+			pageSize = 10
+		}
+
+		offset := (page - 1) * pageSize
+
+		// 构建查询条件
+		whereClause := "WHERE 1=1"
+		args := []interface{}{}
+		argIdx := 1
+
+		if keyword != "" {
+			whereClause += fmt.Sprintf(" AND (u.nickname LIKE $%d OR u.phone LIKE $%d)", argIdx, argIdx)
+			args = append(args, "%"+keyword+"%")
+			argIdx++
+		}
+
+		if membershipLevel != "" {
+			whereClause += fmt.Sprintf(" AND COALESCE(u.membership_level, 0) = $%d", argIdx)
+			args = append(args, membershipLevel)
+			argIdx++
+		}
+
+		// 获取总数
+		var total int
+		countQuery := `SELECT COUNT(*) FROM users u ` + whereClause
+		if len(args) > 0 {
+			db.QueryRow(countQuery, args...).Scan(&total)
+		} else {
+			db.QueryRow(countQuery).Scan(&total)
+		}
+
+		// 获取用户列表
+		query := fmt.Sprintf(`
+			SELECT u.id, u.openid, COALESCE(u.nickname, ''), COALESCE(u.avatar, ''),
+			       COALESCE(u.phone, ''), COALESCE(u.membership_level, 0), COALESCE(u.total_rides, 0),
+			       COALESCE(u.status, 1), u.created_at,
+			       (SELECT COUNT(*) FROM signups WHERE user_id = u.id AND status = 1) as signup_count
+			FROM users u
+			%s
+			ORDER BY u.created_at DESC
+			LIMIT $%d OFFSET $%d
+		`, whereClause, argIdx, argIdx+1)
+		args = append(args, pageSize, offset)
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		var users []AdminUserItem
+		for rows.Next() {
+			var u AdminUserItem
+			err := rows.Scan(&u.ID, &u.Openid, &u.Nickname, &u.Avatar, &u.Phone,
+				&u.MembershipLevel, &u.TotalRides, &u.Status, &u.CreatedAt, &u.SignupCount)
+			if err != nil {
+				continue
+			}
+			users = append(users, u)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data":     users,
+			"total":    total,
+			"page":     page,
+			"pageSize": pageSize,
+		})
+	}
+}
+
+// AdminGetUser 获取用户详情
+func AdminGetUser(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var u AdminUserItem
+		err := db.QueryRow(`
+			SELECT u.id, u.openid, COALESCE(u.nickname, ''), COALESCE(u.avatar, ''),
+			       COALESCE(u.phone, ''), COALESCE(u.membership_level, 0), COALESCE(u.total_rides, 0),
+			       COALESCE(u.status, 1), u.created_at,
+			       (SELECT COUNT(*) FROM signups WHERE user_id = u.id AND status = 1) as signup_count
+			FROM users u
+			WHERE u.id = $1
+		`, id).Scan(&u.ID, &u.Openid, &u.Nickname, &u.Avatar, &u.Phone,
+			&u.MembershipLevel, &u.TotalRides, &u.Status, &u.CreatedAt, &u.SignupCount)
+
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": u})
+	}
+}
+
+// AdminUpdateUser 更新用户
+func AdminUpdateUser(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var input struct {
+			Nickname        string `json:"nickname"`
+			MembershipLevel int    `json:"membershipLevel"`
+			Status          int    `json:"status"`
+		}
+
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, err := db.Exec(`
+			UPDATE users
+			SET nickname = $1, membership_level = $2, status = $3
+			WHERE id = $4
+		`, input.Nickname, input.MembershipLevel, input.Status, id)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
+	}
+}
+
+// AdminDisableUser 禁用/启用用户
+func AdminDisableUser(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var input struct {
+			Status int `json:"status"`
+		}
+
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, err := db.Exec(`UPDATE users SET status = $1 WHERE id = $2`, input.Status, id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "操作成功"})
 	}
 }

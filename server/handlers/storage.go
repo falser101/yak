@@ -12,19 +12,21 @@ import (
 var minioClient *minio.Client
 var minioBucket string
 var minioEndpoint string
+var minioSecure bool
 
 // InitMinIO 初始化 MinIO 客户端
-func InitMinIO(endpoint, accessKey, secretKey, bucket string) error {
+func InitMinIO(endpoint, accessKey, secretKey, bucket string, secure bool) error {
 	var err error
 	minioClient, err = minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-		Secure: false,
+		Secure: secure,
 	})
 	if err != nil {
 		return fmt.Errorf("minio new client error: %v", err)
 	}
 	minioBucket = bucket
 	minioEndpoint = endpoint
+	minioSecure = secure
 
 	// 确保 bucket 存在
 	ctx := context.Background()
@@ -59,5 +61,9 @@ func UploadToMinIO(objectName string, reader io.Reader, size int64, contentType 
 	if err != nil {
 		return "", fmt.Errorf("minio put object error: %v", err)
 	}
-	return fmt.Sprintf("http://%s/%s/%s", minioEndpoint, minioBucket, objectName), nil
+	scheme := "http"
+	if minioSecure {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s/%s/%s", scheme, minioEndpoint, minioBucket, objectName), nil
 }

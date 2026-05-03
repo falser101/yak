@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>🚴 用户自行车列表</span>
+          <span>🚴 用户车辆列表</span>
           <span class="total-count">共 {{ bikes.length }} 辆</span>
         </div>
       </template>
@@ -39,7 +39,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import api from '../api'
+import api from '../../api'
 
 const loading = ref(false)
 const bikes = ref([])

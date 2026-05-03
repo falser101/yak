@@ -14,7 +14,7 @@
   </view>
 
   <!-- 活动列表 -->
-  <view class="tab-content" wx:if="{{currentTab === 'activity'}}">
+  <view class="tab-content" wx:if="{{currentTab === '' || currentTab === 'activity'}}">
     <view class="search-box">
       <input class="search-input" placeholder="搜索活动" bindinput="onSearch" />
     </view>

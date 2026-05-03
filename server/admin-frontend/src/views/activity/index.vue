@@ -82,7 +82,7 @@
             <el-button link type="primary" size="small" @click="editActivity(row)">
               编辑
             </el-button>
-            <el-button link type="danger" size="small" @click="deleteActivity(row)">
+            <el-button link type="danger" size="small" @click="handleDeleteActivity(row)">
               删除
             </el-button>
           </template>
@@ -106,7 +106,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '../api'
+import { getActivities, deleteActivity } from '../../api/activity'
 
 const router = useRouter()
 const loading = ref(false)
@@ -140,7 +140,7 @@ const getStatusText = (status) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await api.get('/activities', { params: { page: page.value, pageSize: pageSize.value } })
+    const res = await getActivities({ page: page.value, pageSize: pageSize.value })
     activities.value = res.data || []
     total.value = res.total || 0
 
@@ -162,12 +162,12 @@ const editActivity = (row) => {
   router.push(`/activities/${row.id}/edit`)
 }
 
-const deleteActivity = async (row) => {
+const handleDeleteActivity = async (row) => {
   try {
     await ElMessageBox.confirm('确定要删除这个活动吗？删除后无法恢复！', '提示', {
       type: 'warning'
     })
-    await api.delete(`/activities/${row.id}`)
+    await deleteActivity(row.id)
     ElMessage.success('删除成功')
     loadData()
   } catch (e) {

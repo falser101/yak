@@ -32,7 +32,7 @@
             <el-button link type="primary" size="small" @click="openBrandForm(row)">
               编辑
             </el-button>
-            <el-button link type="danger" size="small" @click="deleteBrand(row)">
+            <el-button link type="danger" size="small" @click="handleDeleteBrand(row)">
               删除
             </el-button>
           </template>
@@ -81,7 +81,7 @@
             <el-button link type="primary" size="small" @click="openModelForm(row)">
               编辑
             </el-button>
-            <el-button link type="danger" size="small" @click="deleteModel(row)">
+            <el-button link type="danger" size="small" @click="handleDeleteModel(row)">
               删除
             </el-button>
           </template>
@@ -116,7 +116,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import api from '../api'
+import { getBrands, createBrand, updateBrand, deleteBrand, getBrandModels, createModel, updateModel, deleteModel } from '../../api/brand'
 
 const loading = ref(false)
 const brands = ref([])
@@ -133,7 +133,7 @@ const modelForm = reactive({ id: null, name: '', bikeType: '', price: 0, cover: 
 const loadBrands = async () => {
   loading.value = true
   try {
-    const res = await api.get('/brands')
+    const res = await getBrands()
     brands.value = res.data || []
   } catch {
     ElMessage.error('加载失败')
@@ -158,9 +158,9 @@ const saveBrand = async () => {
   }
   try {
     if (brandForm.id) {
-      await api.put(`/brands/${brandForm.id}`, brandForm)
+      await updateBrand(brandForm.id, brandForm)
     } else {
-      await api.post('/brands', brandForm)
+      await createBrand(brandForm)
     }
     ElMessage.success('保存成功')
     brandFormVisible.value = false
@@ -170,10 +170,10 @@ const saveBrand = async () => {
   }
 }
 
-const deleteBrand = async (brand) => {
+const handleDeleteBrand = async (brand) => {
   try {
     await ElMessageBox.confirm('确定要删除这个品牌吗？会同时删除所有车型！', '提示', { type: 'warning' })
-    await api.delete(`/brands/${brand.id}`)
+    await deleteBrand(brand.id)
     ElMessage.success('删除成功')
     loadBrands()
   } catch (e) {
@@ -185,7 +185,7 @@ const openModels = async (brand) => {
   currentBrand.value = brand
   modelsVisible.value = true
   try {
-    const res = await api.get(`/brands/${brand.id}/models`)
+    const res = await getBrandModels(brand.id)
     models.value = res.data || []
   } catch {
     ElMessage.error('加载车型失败')
@@ -209,9 +209,9 @@ const saveModel = async () => {
   try {
     const data = { ...modelForm, brandId: currentBrand.value.id }
     if (modelForm.id) {
-      await api.put(`/models/${modelForm.id}`, data)
+      await updateModel(modelForm.id, data)
     } else {
-      await api.post('/models', data)
+      await createModel(data)
     }
     ElMessage.success('保存成功')
     modelFormVisible.value = false
@@ -221,10 +221,10 @@ const saveModel = async () => {
   }
 }
 
-const deleteModel = async (model) => {
+const handleDeleteModel = async (model) => {
   try {
     await ElMessageBox.confirm('确定要删除这个车型吗？', '提示', { type: 'warning' })
-    await api.delete(`/models/${model.id}`)
+    await deleteModel(model.id)
     ElMessage.success('删除成功')
     openModels(currentBrand.value)
   } catch (e) {

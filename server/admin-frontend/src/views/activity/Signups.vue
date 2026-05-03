@@ -43,7 +43,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import api from '../api'
+import { getActivity, getActivitySignups } from '../../api/activity'
 
 const route = useRoute()
 const loading = ref(false)
@@ -61,8 +61,8 @@ const loadData = async () => {
   loading.value = true
   try {
     const [activityRes, signupsRes] = await Promise.all([
-      api.get(`/activities/${activityId}`),
-      api.get(`/activities/${activityId}/signups`)
+      getActivity(activityId),
+      getActivitySignups(activityId)
     ])
     activity.value = activityRes.data || {}
     signups.value = signupsRes.data || []

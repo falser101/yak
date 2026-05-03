@@ -247,11 +247,12 @@ func GetCurrentUser(db *sql.DB) gin.HandlerFunc {
 
 // ============ 活动相关 ============
 
-// GetActivities 获取活动列表（支持分页）
+// GetActivities 获取活动列表（支持分页和分类筛选）
 func GetActivities(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+		category := c.DefaultQuery("category", "")
 
 		if page < 1 {
 			page = 1
@@ -261,14 +262,6 @@ func GetActivities(db *sql.DB) gin.HandlerFunc {
 		}
 
 		offset := (page - 1) * pageSize
-
-		// 获取总数
-		var total int
-		err := db.QueryRow(`SELECT COUNT(*) FROM activities`).Scan(&total)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
 
 		// 获取当前用户 ID（用于判断是否已报名）
 		currentUserID := 0
@@ -282,11 +275,25 @@ func GetActivities(db *sql.DB) gin.HandlerFunc {
 			}
 		}
 
-		// 获取活动列表（不含最近报名用户）
-		rows, err := db.Query(`
+		// 获取总数
+		var total int
+		var countErr error
+		if category != "" {
+			countErr = db.QueryRow(`SELECT COUNT(*) FROM activities WHERE category = $1`, category).Scan(&total)
+		} else {
+			countErr = db.QueryRow(`SELECT COUNT(*) FROM activities`).Scan(&total)
+		}
+		if countErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": countErr.Error()})
+			return
+		}
+
+		// 获取活动列表
+		query := `
 			SELECT
 				a.id, a.title, a.cover, a.date, a.location,
 				a.max_participants, a.price, a.description, a.status, a.created_at, a.signup_end_time,
+				COALESCE(a.category, 'activity'), COALESCE(a.rules, ''), COALESCE(a.route, ''), COALESCE(a.awards, ''),
 				CASE WHEN a.created_by ~ '^[0-9]+$' THEN a.created_by::int ELSE 0 END as created_by_id,
 				COALESCE(u.nickname, '') as created_by_name,
 				COALESCE(signup_count.cnt, 0) as signup_count,
@@ -300,9 +307,23 @@ func GetActivities(db *sql.DB) gin.HandlerFunc {
 				FROM signups WHERE status = 1
 				GROUP BY activity_id
 			) signup_count ON a.id = signup_count.activity_id
+			` + func() string {
+				if category != "" {
+					return " WHERE a.category = $4"
+				}
+				return ""
+			}() + `
 			ORDER BY a.date DESC
 			LIMIT $1 OFFSET $2
-		`, pageSize, offset, currentUserID)
+		`
+
+		var rows *sql.Rows
+		var err error
+		if category != "" {
+			rows, err = db.Query(query, pageSize, offset, currentUserID, category)
+		} else {
+			rows, err = db.Query(query, pageSize, offset, currentUserID)
+		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -326,6 +347,10 @@ func GetActivities(db *sql.DB) gin.HandlerFunc {
 			CreatedByName   string         `json:"createdByName"`
 			IsSignedUp      bool           `json:"isSignedUp"`
 			RecentSignups   []SignupAvatar `json:"recentSignups"`
+			Category        string         `json:"category"`
+			Rules           string         `json:"rules"`
+			Route           string         `json:"route"`
+			Awards          string         `json:"awards"`
 		}
 
 		var activities []ActivityItem
@@ -334,6 +359,7 @@ func GetActivities(db *sql.DB) gin.HandlerFunc {
 			var a ActivityItem
 			err := rows.Scan(&a.ID, &a.Title, &a.Cover, &a.Date, &a.Location,
 				&a.MaxParticipants, &a.Price, &a.Description, &a.Status, &a.CreatedAt, &a.SignupEndTime,
+				&a.Category, &a.Rules, &a.Route, &a.Awards,
 				&a.CreatedByID, &a.CreatedByName, &a.SignupCount, &a.IsSignedUp)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -427,6 +453,10 @@ func GetActivity(db *sql.DB) gin.HandlerFunc {
 			IsSignedUp      bool           `json:"isSignedUp"`
 			CurrentUser     *UserInfo      `json:"currentUser,omitempty"`
 			AllSignups      []SignupDetail `json:"allSignups,omitempty"`
+			Category        string         `json:"category"`
+			Rules           string         `json:"rules"`
+			Route           string         `json:"route"`
+			Awards          string         `json:"awards"`
 		}
 
 		var a ActivityDetail
@@ -437,14 +467,16 @@ func GetActivity(db *sql.DB) gin.HandlerFunc {
 				COALESCE(u.id::text, '0')::int, COALESCE(u.nickname, ''),
 				COALESCE((
 					SELECT COUNT(*) FROM signups WHERE activity_id = a.id AND status = 1
-				), 0)
+				), 0),
+				COALESCE(a.category, 'activity'), COALESCE(a.rules, ''), COALESCE(a.route, ''), COALESCE(a.awards, '')
 			FROM activities a
 			LEFT JOIN users u ON CASE WHEN a.created_by ~ '^[0-9]+$' THEN a.created_by::int ELSE 0 END = u.id
 			WHERE a.id = $1
 		`, id).Scan(
 			&a.ID, &a.Title, &a.Cover, &a.Date, &a.Location,
 			&a.MaxParticipants, &a.Price, &a.Description, &a.Status, &a.CreatedAt, &a.SignupEndTime,
-			&a.CreatedByID, &a.CreatedByName, &a.Participants)
+			&a.CreatedByID, &a.CreatedByName, &a.Participants,
+			&a.Category, &a.Rules, &a.Route, &a.Awards)
 
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, gin.H{"error": "活动不存在"})
@@ -519,6 +551,10 @@ func CreateActivity(db *sql.DB) gin.HandlerFunc {
 			Price           float64    `json:"price"`
 			Description     string     `json:"description"`
 			SignupEndTime   *time.Time `json:"signupEndTime,omitempty"`
+			Category        string     `json:"category"`
+			Rules           string     `json:"rules"`
+			Route           string     `json:"route"`
+			Awards          string     `json:"awards"`
 		}
 
 		if err := c.ShouldBindJSON(&input); err != nil {
@@ -533,13 +569,20 @@ func CreateActivity(db *sql.DB) gin.HandlerFunc {
 			userID, _ = strconv.Atoi(cookie)
 		}
 
+		// 默认分类
+		category := input.Category
+		if category == "" {
+			category = "activity"
+		}
+
 		var id int
 		err := db.QueryRow(`
-			INSERT INTO activities (title, cover, date, location, max_participants, price, description, signup_end_time, created_by)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			INSERT INTO activities (title, cover, date, location, max_participants, price, description, signup_end_time, created_by, category, rules, route, awards)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 			RETURNING id
 		`, input.Title, input.Cover, input.Date, input.Location,
-			input.MaxParticipants, input.Price, input.Description, input.SignupEndTime, userID).Scan(&id)
+			input.MaxParticipants, input.Price, input.Description, input.SignupEndTime, userID,
+			category, input.Rules, input.Route, input.Awards).Scan(&id)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -558,6 +601,7 @@ func Signup(db *sql.DB) gin.HandlerFunc {
 		var input struct {
 			Name             string `json:"name"`
 			Phone            string `json:"phone"`
+			IdNumber         string `json:"idNumber"`
 			EmergencyContact string `json:"emergencyContact"`
 			EmergencyPhone   string `json:"emergencyPhone"`
 			Remark           string `json:"remark"`
@@ -628,11 +672,11 @@ func Signup(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 插入报名记录
+		// 插入报名记录（包含身份证号）
 		_, err = tx.Exec(`
-			INSERT INTO signups (activity_id, user_id, name, phone, emergency_contact, emergency_phone, remark, status)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, 1)
-		`, aid, userID, input.Name, input.Phone, input.EmergencyContact, input.EmergencyPhone, input.Remark)
+			INSERT INTO signups (activity_id, user_id, name, phone, id_number, emergency_contact, emergency_phone, remark, status)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)
+		`, aid, userID, input.Name, input.Phone, input.IdNumber, input.EmergencyContact, input.EmergencyPhone, input.Remark)
 
 		if err != nil {
 			tx.Rollback()

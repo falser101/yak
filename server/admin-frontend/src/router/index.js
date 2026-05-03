@@ -4,45 +4,55 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('../views/login/index.vue')
   },
   {
     path: '/',
-    component: () => import('../views/Layout.vue'),
+    component: () => import('../views/layout/index.vue'),
     children: [
       {
         path: '',
-        redirect: '/activities'
+        redirect: '/dashboard'
+      },
+      {
+        path: '/dashboard',
+        name: 'Dashboard',
+        component: () => import('../views/dashboard/index.vue')
       },
       {
         path: '/activities',
         name: 'Activities',
-        component: () => import('../views/Activities.vue')
+        component: () => import('../views/activity/index.vue')
       },
       {
         path: '/activities/create',
         name: 'ActivityCreate',
-        component: () => import('../views/ActivityForm.vue')
+        component: () => import('../views/activity/Form.vue')
       },
       {
         path: '/activities/:id/edit',
         name: 'ActivityEdit',
-        component: () => import('../views/ActivityForm.vue')
+        component: () => import('../views/activity/Form.vue')
       },
       {
         path: '/activities/:id/signups',
         name: 'Signups',
-        component: () => import('../views/Signups.vue')
+        component: () => import('../views/activity/Signups.vue')
       },
       {
-        path: '/brands',
-        name: 'Brands',
-        component: () => import('../views/Brands.vue')
+        path: '/orders',
+        name: 'Orders',
+        component: () => import('../views/order/index.vue')
       },
       {
         path: '/bikes',
         name: 'Bikes',
-        component: () => import('../views/Bikes.vue')
+        component: () => import('../views/bike/index.vue')
+      },
+      {
+        path: '/users',
+        name: 'Users',
+        component: () => import('../views/user/index.vue')
       }
     ]
   }

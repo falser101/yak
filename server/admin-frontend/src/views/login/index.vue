@@ -27,7 +27,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '../../api'
 
 const router = useRouter()
 const formRef = ref()
@@ -49,15 +49,15 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    const res = await axios.post('/api/admin/login', {
+    const res = await api.post('/login', {
       username: form.username,
       password: form.password
     })
-    if (res.data.success) {
+    if (res.success) {
       localStorage.setItem('admin_username', form.username)
       router.push('/')
     } else {
-      ElMessage.error(res.data.error || '登录失败')
+      ElMessage.error(res.error || '登录失败')
     }
   } catch (error) {
     ElMessage.error('登录失败')

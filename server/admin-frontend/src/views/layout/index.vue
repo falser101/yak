@@ -12,17 +12,25 @@
         :collapse="isCollapse"
         @select="handleMenuSelect"
       >
+        <el-menu-item index="/dashboard">
+          <el-icon><DataBoard /></el-icon>
+          <template #title>控制台</template>
+        </el-menu-item>
         <el-menu-item index="/activities">
           <el-icon><Calendar /></el-icon>
           <template #title>活动管理</template>
         </el-menu-item>
-        <el-menu-item index="/brands">
-          <el-icon><Goods /></el-icon>
-          <template #title>品牌管理</template>
+        <el-menu-item index="/orders">
+          <el-icon><List /></el-icon>
+          <template #title>订单管理</template>
         </el-menu-item>
         <el-menu-item index="/bikes">
-          <el-icon><Bicycle /></el-icon>
-          <template #title>自行车</template>
+          <el-icon><Box /></el-icon>
+          <template #title>装备租赁</template>
+        </el-menu-item>
+        <el-menu-item index="/users">
+          <el-icon><User /></el-icon>
+          <template #title>用户管理</template>
         </el-menu-item>
       </el-menu>
       <div class="collapse-btn" @click="isCollapse = !isCollapse">
@@ -64,7 +72,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Calendar, Goods, Bicycle, User, ArrowDown, DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
+import { Calendar, User, ArrowDown, DArrowLeft, DArrowRight, DataBoard, List, Box } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -75,9 +83,11 @@ const activeMenu = computed(() => route.path)
 
 const pageTitle = computed(() => {
   const map = {
+    '/dashboard': '控制台',
     '/activities': '活动管理',
-    '/brands': '品牌管理',
-    '/bikes': '自行车管理',
+    '/orders': '订单管理',
+    '/bikes': '装备租赁',
+    '/users': '用户管理',
     '/activities/create': '创建活动',
     '/activities/:id/edit': '编辑活动',
     '/activities/:id/signups': '报名管理'

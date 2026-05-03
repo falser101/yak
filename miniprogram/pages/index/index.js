@@ -2,52 +2,15 @@ const app = getApp()
 
 Page({
   data: {
-    currentTab: 'activity',
+    currentTab: '',
     tabs: [
-      { key: 'activity', label: '活动' },
-      { key: 'challenge', label: '挑战' },
-      { key: 'race', label: '赛事' },
+      { key: '', label: '全部' },
+      { key: 'activity', label: '赛事' },
+      { key: 'charity', label: '公益' },
       { key: 'club', label: '俱乐部' }
     ],
     activities: [],
-    challenges: [
-      {
-        id: 1,
-        icon: '🚴',
-        title: '百公里挑战',
-        description: '累计骑行 100 公里',
-        progress: 65,
-        current: 65,
-        target: 100,
-        unit: '公里',
-        badge: '🏅',
-        completed: false
-      },
-      {
-        id: 2,
-        icon: '⛰️',
-        title: '爬坡王者',
-        description: '累计爬升 1000 米',
-        progress: 30,
-        current: 300,
-        target: 1000,
-        unit: '米',
-        badge: '🏔️',
-        completed: false
-      },
-      {
-        id: 3,
-        icon: '👥',
-        title: '社交达人',
-        description: '参加 10 场活动',
-        progress: 100,
-        current: 10,
-        target: 10,
-        unit: '场',
-        badge: '🌟',
-        completed: true
-      }
-    ]
+    allActivities: []
   },
 
   onLoad() {
@@ -55,22 +18,17 @@ Page({
   },
 
   onShow() {
-    if (this.data.currentTab === 'activity') {
-      this.loadActivities()
-    }
+    this.loadActivities()
   },
 
   onPullDownRefresh() {
-    if (this.data.currentTab === 'activity') {
-      this.loadActivities()
-    } else {
-      wx.stopPullDownRefresh()
-    }
+    this.loadActivities()
   },
 
   onTabChange(e) {
     const key = e.currentTarget.dataset.key
     this.setData({ currentTab: key })
+    this.filterActivities()
   },
 
   loadActivities() {
@@ -86,13 +44,22 @@ Page({
       success: (res) => {
         if (res.statusCode === 200 && res.data.data) {
           const activities = res.data.data.map(item => {
+            // 格式化日期显示
+            if (item.date) {
+              const d = new Date(item.date)
+              item.date = `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+            }
             if (item.signupEndTime) {
               const d = new Date(item.signupEndTime)
               item.signupEndTime = `${d.getMonth() + 1}/${d.getDate()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
             }
             return item
           })
-          this.setData({ activities })
+          this.setData({
+            allActivities: activities,
+            activities: activities
+          })
+          this.filterActivities()
         }
         wx.hideLoading()
         wx.stopPullDownRefresh()
@@ -109,16 +76,30 @@ Page({
     })
   },
 
+  filterActivities() {
+    const { allActivities, currentTab } = this.data
+    if (!currentTab) {
+      this.setData({ activities: allActivities })
+    } else {
+      const filtered = allActivities.filter(item => item.category === currentTab)
+      this.setData({ activities: filtered })
+    }
+  },
+
   onSearch(e) {
     const keyword = e.detail.value.trim()
     if (!keyword) {
-      this.loadActivities()
+      this.filterActivities()
       return
     }
 
-    const filtered = this.data.activities.filter(item =>
+    const { allActivities, currentTab } = this.data
+    let filtered = allActivities.filter(item =>
       item.title.toLowerCase().includes(keyword.toLowerCase())
     )
+    if (currentTab) {
+      filtered = filtered.filter(item => item.category === currentTab)
+    }
     this.setData({ activities: filtered })
   },
 
